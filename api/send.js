@@ -1,6 +1,3 @@
-
-
-
 require('dotenv').config(); // Ensure this is at the top to load .env variables
 const express = require('express');
 const cors = require('cors');
@@ -33,10 +30,11 @@ app.post('/api/send', async (req, res) => {
 
   // Set up email data
   const mailOptions = {
-    from: email,
-    to: process.env.EMAIL_USER,
+    from: process.env.EMAIL_USER, // Use your own email address here
+    to: process.env.EMAIL_USER, // Send to your own email address
     subject: `New message from ${name}`,
-    text: message
+    text: `Name: ${name}\nEmail: ${email}\nMessage: ${message}`, // Include user's email in the message
+    replyTo: email // Set the reply-to field to the user's email address
   };
 
   try {
