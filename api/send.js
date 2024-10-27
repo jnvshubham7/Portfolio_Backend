@@ -2,14 +2,15 @@ require('dotenv').config(); // Ensure this is at the top to load .env variables
 const express = require('express');
 const cors = require('cors');
 const nodemailer = require('nodemailer');
+const request = require('request'); // Import the request package
 
 const app = express();
 
 // Enable CORS for all routes
 app.use(cors());
-
 app.use(express.json()); // Parse JSON bodies
 
+// Email sending endpoint
 app.post('/api/send', async (req, res) => {
   console.log('Environment variables:', process.env.EMAIL_USER, process.env.EMAIL_PASS); // Log to verify
 
@@ -44,6 +45,19 @@ app.post('/api/send', async (req, res) => {
     console.error('Error sending email:', error); // Log error to the console
     res.status(500).json({ message: 'Failed to send message', error: error.toString() });
   }
+});
+
+// PDF fetching endpoint
+app.get('/api/get-pdf', (req, res) => {
+  const pdfLink = 'https://drive.google.com/uc?export=download&id=15YgPtd-l1cPdDdJwSKaBHBWj4V-T_wTL';
+  request({ url: pdfLink, method: 'GET', encoding: null }, (err, response, body) => {
+    if (err) {
+      console.error('Error fetching PDF:', err);
+      return res.status(500).json({ message: 'Failed to fetch PDF' });
+    }
+    res.set('Content-Type', 'application/pdf');
+    res.send(body);
+  });
 });
 
 // Handle invalid routes
