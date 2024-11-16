@@ -1,18 +1,47 @@
-require('dotenv').config(); // Ensure this is at the top to load .env variables
+require('dotenv').config(); // Load environment variables
 const express = require('express');
 const cors = require('cors');
 const nodemailer = require('nodemailer');
-const request = require('request'); // Import the request package
+const axios = require('axios');
 
 const app = express();
 
-// Enable CORS for all routes
-app.use(cors());
-app.use(express.json()); // Parse JSON bodies
+// Allowed origins for CORS
+const allowedOrigins = [
+  'https://shubhambhokta.vercel.app',
+  'http://localhost:3000',
+  'https://shubham-bhokta.vercel.app',
+];
+
+// Enable CORS with detailed configuration
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true); // Allow request
+    } else {
+      callback(new Error('Not allowed by CORS')); // Reject request
+    }
+  },
+  methods: ['GET', 'POST', 'OPTIONS'],
+  credentials: true,
+}));
+
+// Ensure preflight requests are handled
+app.options('*', cors());
+
+// Middleware to parse JSON bodies
+app.use(express.json());
+
+// Middleware to log request origins for debugging
+app.use((req, res, next) => {
+  console.log('Request Origin:', req.headers.origin);
+  console.log('Allowed Origins:', allowedOrigins);
+  next();
+});
 
 // Email sending endpoint
 app.post('/api/send', async (req, res) => {
-  console.log('Environment variables:', process.env.EMAIL_USER, process.env.EMAIL_PASS); // Log to verify
+  console.log('Environment variables:', process.env.EMAIL_USER, process.env.EMAIL_PASS); // Debug environment variables
 
   const { name, email, message } = req.body;
 
@@ -20,7 +49,7 @@ app.post('/api/send', async (req, res) => {
     return res.status(400).json({ message: 'All fields are required' });
   }
 
-  // Create a transporter object using SMTP transport
+  // Configure email transporter
   const transporter = nodemailer.createTransport({
     service: 'Gmail',
     auth: {
@@ -31,36 +60,44 @@ app.post('/api/send', async (req, res) => {
 
   // Set up email data
   const mailOptions = {
-    from: process.env.EMAIL_USER, // Use your own email address here
-    to: process.env.EMAIL_USER, // Send to your own email address
+    from: process.env.EMAIL_USER,
+    to: process.env.EMAIL_USER,
     subject: `New message from ${name}`,
-    text: `Name: ${name}\nEmail: ${email}\nMessage: ${message}`, // Include user's email in the message
-    replyTo: email // Set the reply-to field to the user's email address
+    text: `Name: ${name}\nEmail: ${email}\nMessage: ${message}`,
+    replyTo: email
   };
 
   try {
     await transporter.sendMail(mailOptions);
     res.status(200).json({ message: 'Message sent successfully' });
   } catch (error) {
-    console.error('Error sending email:', error); // Log error to the console
+    console.error('Error sending email:', error);
     res.status(500).json({ message: 'Failed to send message', error: error.toString() });
   }
 });
 
 // PDF fetching endpoint
-app.get('/api/get-pdf', (req, res) => {
+app.get('/api/get-pdf', async (req, res) => {
   const pdfLink = 'https://drive.google.com/uc?export=download&id=15YgPtd-l1cPdDdJwSKaBHBWj4V-T_wTL';
-  request({ url: pdfLink, method: 'GET', encoding: null }, (err, response, body) => {
-    if (err) {
-      console.error('Error fetching PDF:', err);
-      return res.status(500).json({ message: 'Failed to fetch PDF' });
-    }
-    res.set('Content-Type', 'application/pdf');
-    res.send(body);
-  });
+
+  try {
+    const response = await axios.get(pdfLink, { responseType: 'arraybuffer' }); // Fetch PDF from Google Drive
+
+    // Set headers for PDF download
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': 'attachment; filename="document.pdf"'
+    });
+
+    // Send the PDF data
+    res.send(response.data);
+  } catch (error) {
+    console.error('Error fetching PDF:', error);
+    res.status(500).json({ message: 'Failed to fetch PDF', error: error.toString() });
+  }
 });
 
-// Handle invalid routes
+// Catch-all handler for invalid routes
 app.use((req, res) => {
   res.status(405).json({ message: 'Method not allowed' });
 });
