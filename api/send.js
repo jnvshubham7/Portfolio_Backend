@@ -13,7 +13,6 @@ const allowedOrigins = [
   'https://shubham-bhokta.vercel.app',
 ];
 
-// Enable CORS with detailed configuration
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin || allowedOrigins.indexOf(origin) !== -1) {
