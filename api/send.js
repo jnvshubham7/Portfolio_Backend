@@ -82,25 +82,21 @@ app.get('/api/get-pdf', async (req, res) => {
   try {
     const response = await axios.get(pdfLink, {
       responseType: 'arraybuffer',
-      headers: {
-        'Access-Control-Allow-Origin': '*', // Allow cross-origin access
-      },
-    });
-     // Fetch PDF from Google Drive
-
-    // Set headers for PDF download
-    res.set({
-      'Content-Type': 'application/pdf',
-      'Content-Disposition': 'attachment; filename="document.pdf"'
     });
 
-    // Send the PDF data
+    // Set CORS headers for this specific request
+    res.setHeader('Access-Control-Allow-Origin', '*'); // Allow CORS for all origins (can be restricted as needed)
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="document.pdf"');
+    
+    // Send the PDF data to the client
     res.send(response.data);
   } catch (error) {
     console.error('Error fetching PDF:', error);
     res.status(500).json({ message: 'Failed to fetch PDF', error: error.toString() });
   }
 });
+
 
 // Catch-all handler for invalid routes
 app.use((req, res) => {
