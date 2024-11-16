@@ -80,7 +80,13 @@ app.get('/api/get-pdf', async (req, res) => {
   const pdfLink = 'https://drive.google.com/uc?export=download&id=15YgPtd-l1cPdDdJwSKaBHBWj4V-T_wTL';
 
   try {
-    const response = await axios.get(pdfLink, { responseType: 'arraybuffer' }); // Fetch PDF from Google Drive
+    const response = await axios.get(pdfLink, {
+      responseType: 'arraybuffer',
+      headers: {
+        'Access-Control-Allow-Origin': '*', // Allow cross-origin access
+      },
+    });
+     // Fetch PDF from Google Drive
 
     // Set headers for PDF download
     res.set({
